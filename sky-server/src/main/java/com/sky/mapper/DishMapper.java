@@ -63,4 +63,11 @@ public interface DishMapper {
      * @param dish
      */
     void update(Dish dish);
+
+    /**
+     * 条件查询菜品
+     * @param dish
+     * @return
+     */
+    List<Dish> list(Dish dish);
 }
