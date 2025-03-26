@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sky.properties.WeChatProperties;
 import com.sky.service.OrderService;
+import com.sky.websocket.WebSocketServer;
 import com.wechat.pay.contrib.apache.httpclient.util.AesUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.entity.ContentType;
@@ -16,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 支付回调相关接口
@@ -29,6 +31,9 @@ public class PayNotifyController {
     @Autowired
     private WeChatProperties weChatProperties;
 
+    @Autowired
+    private WebSocketServer webSocketServer;
+
     /**
      * 支付成功回调
      *
@@ -37,7 +42,7 @@ public class PayNotifyController {
     @RequestMapping("/paySuccess")
     public void paySuccessNotify(HttpServletRequest request, HttpServletResponse response) throws Exception {
         //读取数据
-        String body = readData(request);
+        /*String body = readData(request);
         log.info("支付成功回调：{}", body);
 
         //数据解密
@@ -55,7 +60,14 @@ public class PayNotifyController {
         orderService.paySuccess(outTradeNo);
 
         //给微信响应
-        responseToWeixin(response);
+        responseToWeixin(response);*/
+
+        Map map = new HashMap<>();
+        map.put("type", 1);
+        map.put("orderId", 2);
+        map.put("content", "订单号：" + 123456);
+        String json = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(json);
     }
 
     /**
