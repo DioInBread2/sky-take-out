@@ -12,4 +12,87 @@
          #{amount},#{remark},#{phone},#{address},#{userName},#{consignee},#{cancelReason},#{rejectionReason},
          #{cancelTime},#{estimatedDeliveryTime},#{deliveryStatus},#{deliveryTime},#{packAmount},#{tablewareNumber},#{tablewareStatus})
     </insert>
+    <update id="update" parameterType="com.sky.entity.Orders">
+        update orders
+        <set>
+            <if test="cancelReason != null and cancelReason!='' "> cancel_reason=#{cancelReason}, </if>
+            <if test="rejectionReason != null and rejectionReason!='' "> rejection_reason=#{rejectionReason}, </if>
+            <if test="cancelTime != null"> cancel_time=#{cancelTime}, </if>
+            <if test="payStatus != null"> pay_status=#{payStatus}, </if>
+            <if test="payMethod != null"> pay_method=#{payMethod}, </if>
+            <if test="checkoutTime != null"> checkout_time=#{checkoutTime}, </if>
+            <if test="status != null"> status = #{status}, </if>
+            <if test="deliveryTime != null"> delivery_time = #{deliveryTime} </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateBatch">
+        update orders
+        <set>
+            <if test="status != null"> status = #{status}, </if>
+            <if test="cancelReason != null and cancelReason != ''"> cancel_reason = #{cancelReason}, </if>
+            <if test="cancelTime != null"> cancel_time = #{cancelTime} </if>
+        </set>
+        where id in
+        <foreach collection="ordIds" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+    <!--    注意CTE比较逻辑 ： WHERE date &lt; #{end} 中的 date是当前行，而不是DATE_ADD(date, INTERVAL 1 DAY)新生成的行 ，当前行通过之后就会保留新生成的行-->
+    <select id="sumByRange" resultType="java.lang.Double">
+        WITH RECURSIVE DateRange AS (
+        SELECT #{begin} AS date
+        UNION ALL
+        SELECT DATE_ADD(date, INTERVAL 1 DAY)
+        FROM DateRange
+        WHERE date &lt; #{end}
+        )
+        SELECT
+            COALESCE(SUM(o.amount), 0)  AS turnover
+        FROM
+        DateRange dr
+        LEFT JOIN
+        orders o ON DATE(o.order_time) = dr.date AND o.status = 5
+        GROUP BY
+        dr.date
+        ORDER BY
+        dr.date
+    </select>
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from orders
+        <where>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select od.name, sum(od.number) as number
+        from order_detail od
+        inner join orders o
+        where  od.order_id = o.id and o.status = 5
+        <if test="begin != null">
+            and o.order_time &gt; #{begin}
+        </if>
+        <if test="end != null">
+            and o.order_time &lt; #{end}
+        </if>
+        group by od.name
+        order by sum(od.number) desc
+        limit 0,10
+    </select>
+    <select id="sumByMap" resultType="java.lang.Double">
+        select sum(amount) from orders
+        <where>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
 </mapper>
